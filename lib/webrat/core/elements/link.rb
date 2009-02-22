@@ -37,7 +37,11 @@ module Webrat
     end
 
     def href
-      Webrat::XML.attribute(@element, "href")
+      if link_to_remote?
+        onclick.match(/Request\('([^']+)',/)[1]
+      else
+        Webrat::XML.attribute(@element, "href")
+      end
     end
 
     def absolute_href
@@ -60,12 +64,22 @@ module Webrat
       Webrat::XML.attribute(@element, "onclick")
     end
     
+    def link_to_remote?
+      onclick && onclick.include?("Ajax.Request")
+    end
+    
     def http_method
       if !onclick.blank? && onclick.include?("f.submit()")
         http_method_from_js_form
+      elsif !onclick.blank? && link_to_remote?
+        http_method_from_link_to_remote
       else
         :get
       end
+    end
+
+    def http_method_from_link_to_remote
+      onclick.match(/method:'(put|post|get|delete)'/)[1].to_sym       
     end
 
     def http_method_from_js_form

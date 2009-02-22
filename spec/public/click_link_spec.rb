@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + "/../spec_helper")
 
 describe "click_link" do
-  it "should click links with ampertands" do
+  it "should click links with ampersands" do
     with_html <<-HTML
       <html>
       <a href="/page">Save &amp; go back</a>
@@ -218,6 +218,34 @@ describe "click_link" do
       click_link "Link"
     }.should raise_error(Webrat::WebratError)
   end
+
+  describe "link_to_remote" do
+    def setup_html(method)
+      @url = "http://example.com?key=value"
+      with_html <<-HTML
+        <html>
+        <a href="#"
+          onclick="new Ajax.Request('#{@url}', 
+            {
+              asynchronous:true, 
+              evalScripts:true, 
+              method:'#{method}'
+            }
+          ); 
+          return false;">Remote</a>
+        </html>
+      HTML
+    end
+    
+    %w(get put post delete).each do |method|
+      it "should click #{method} links" do
+        setup_html(method)
+        webrat_session.should_receive(method.to_sym).with(@url, {})
+        click_link "Remote"
+      end
+    end    
+  end
+
 
   it "should assert valid response" do
     with_html <<-HTML
